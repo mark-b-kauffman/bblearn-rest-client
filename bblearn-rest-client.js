@@ -12,6 +12,7 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
     $client._key = key;
     $client._secret = secret;
     $client._authorization = 'Basic ' + new Buffer.from($client._key + ':' + $client._secret).toString('base64');
+    $client._authTime = null;
 
     $client._requestAuthToken = async function requestAuthToken(parameters = {grant_type: 'client_credentials'}) {
         // POST to '/learn/api/public/v1/oauth2/token'
@@ -28,6 +29,7 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
         }; 
         console.log(`_RequestAuthToken - parameters: ${JSON.stringify(parameters)}`);
         
+        $client._authTime = Date.now();
         await rp(options)
             .then(function (parsedBody){
                 result = parsedBody;
@@ -40,9 +42,12 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
         return result;
     }
 
-    $client.getAuthToken = function(parameters = {grant_type: 'client_credentials'}){
-        result = this._requestAuthToken(parameters);
-        return result;
+    $client.getAccessToken = async function(parameters = {grant_type: 'client_credentials'}){
+        if ($client.token == null) {
+            $client.token = await this._requestAuthToken(parameters);
+        }
+
+        return $client.token.access_token;
     }
 }; 
 

@@ -11,10 +11,10 @@ var myClient = new BbLearnRestClient(fqdn, key, secret);
 
 console.log(JSON.stringify(myClient));
 
-async function callGetAuthToken(){
-    let result =  await myClient.getAuthToken();
+async function callGetAccessToken(){
+    let result =  await myClient.getAccessToken();
     console.log(JSON.stringify(result));
 }
 
-callGetAuthToken();
+callGetAccessToken();
 
