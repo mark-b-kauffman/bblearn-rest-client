@@ -1,4 +1,5 @@
-// SEE THE LICENSE
+// Use of this code means you accept the terms of the included LICENSE file.
+// Author: Mark Bykerk Kauffman - 2019.10
 // File: bblearn-rest-client.js
 // Purpose: Build an Object that can make REST API calls to any Learn system that supports REST.
 var fs = require('fs');
@@ -14,19 +15,24 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
     $client._authorization = 'Basic ' + new Buffer.from($client._key + ':' + $client._secret).toString('base64');
     $client._authTime = null;
 
-    $client._requestAuthToken = async function requestAuthToken(parameters = {grant_type: 'client_credentials'}) {
+    $client._requestAuthToken = async function requestAuthToken(parameters = {grant_type: 'client_credentials'}, options={}) {
         // POST to '/learn/api/public/v1/oauth2/token'
         // parameters are the JSON object for the parameters. May be empty. 
         // If empty grant_type defaults to 'client_credentials'
         var result = null;
-        var options = {
+        var defaultOptions = {
             method: 'post',
             url: 'https://' + $client._fqdn + '/learn/api/public/v1/oauth2/token',                
             headers: {Authorization: $client._authorization},
             form: {grant_type: `${parameters.grant_type}`},
             json: true,
+            // insecure: false, These two were mentioned on stackoverflow. But I can't find doc and strictSSL has doc.
+            // rejectUnauthorized: true,
+            strictSSL: true,
             resolveWithFullResponse: false
         }; 
+        
+        let mergedOptions = {...defaultOptions, ...options};
         
         /*
         The Date.now() is an inbuilt function in JavaScript which returns the number of 
@@ -35,7 +41,7 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
         */
         $client._authTime = Date.now(); // The time we got the auth token.
    
-        await rp(options)
+        await rp(mergedOptions)
             .then(function (parsedBody){
                 result = parsedBody;
                 // POST succeeded
@@ -60,11 +66,15 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
         return (time_diff < 1000); // return true if there's less than a second remaining.
     }
 
-    $client.getAccessToken = async function(parameters = {grant_type: 'client_credentials'}){
+    $client.getAccessToken = async function(parameters = {grant_type: 'client_credentials'}, options ={}){
         if ($client._token == null || $client.isTokenStale()) {
-            $client._token = await this._requestAuthToken(parameters);
+            $client._token = await this._requestAuthToken(parameters, options);
         }
         return $client._token;
+    }
+
+    $client.getEndpoint = async function(path, id, params = {}, requestOptions = {}) {
+
     }
 }; 
 
