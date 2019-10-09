@@ -7,7 +7,7 @@ var rp = require('request-promise-native');
 
 exports.BbLearnRestClient  = function(fqdn, key, secret) {
     let $client = this;
-    let token = null;
+    $client._token = null;
     $client._fqdn = fqdn;
     $client._key = key;
     $client._secret = secret;
@@ -27,9 +27,14 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
             json: true,
             resolveWithFullResponse: false
         }; 
-        console.log(`_RequestAuthToken - parameters: ${JSON.stringify(parameters)}`);
         
-        $client._authTime = Date.now();
+        /*
+        The Date.now() is an inbuilt function in JavaScript which returns the number of 
+        milliseconds elapsed since January 1, 1970, 00:00:00 UTC. Since now() is a static
+        method of Date, it will always be used as Date.now(). 
+        */
+        $client._authTime = Date.now(); // The time we got the auth token.
+   
         await rp(options)
             .then(function (parsedBody){
                 result = parsedBody;
@@ -42,12 +47,24 @@ exports.BbLearnRestClient  = function(fqdn, key, secret) {
         return result;
     }
 
-    $client.getAccessToken = async function(parameters = {grant_type: 'client_credentials'}){
-        if ($client.token == null) {
-            $client.token = await this._requestAuthToken(parameters);
-        }
+    $client.isTokenStale = function (){
+        let expires_in = $client._token.expires_in *1000; // TO DO: add the auth time to the expires_in time.
 
-        return $client.token.access_token;
+        let expires_at = $client._authTime + expires_in;
+        let d = new Date(expires_at);
+
+
+        let time_diff = expires_at - Date.now(); // To do expires at minus now.
+
+        if (time_diff < 1000) console.log(`TOKEN WENT STALE!!`);
+        return (time_diff < 1000); // return true if there's less than a second remaining.
+    }
+
+    $client.getAccessToken = async function(parameters = {grant_type: 'client_credentials'}){
+        if ($client._token == null || $client.isTokenStale()) {
+            $client._token = await this._requestAuthToken(parameters);
+        }
+        return $client._token;
     }
 }; 
 

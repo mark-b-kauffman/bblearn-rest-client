@@ -11,10 +11,23 @@ var myClient = new BbLearnRestClient(fqdn, key, secret);
 
 console.log(JSON.stringify(myClient));
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
 async function callGetAccessToken(){
     let result =  await myClient.getAccessToken();
     console.log(JSON.stringify(result));
+
+    while (true) {
+        await sleep(10000);
+
+        result =  await myClient.getAccessToken();
+        console.log(JSON.stringify(result));
+    }
+
 }
 
 callGetAccessToken();
+
 
